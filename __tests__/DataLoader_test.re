@@ -15,6 +15,11 @@ describe("Primary API", () => {
       maxBatchSize: 256,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
   testPromise("it builds a really simple data loader", () => {
     module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
@@ -158,6 +163,11 @@ describe("clear single value", () => {
       maxBatchSize: 2,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
   module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
   testPromise("can get a value", () => {
@@ -203,6 +213,11 @@ describe("clear all values", () => {
       maxBatchSize: 2,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
   module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
   testPromise("loads initial data", () => {
@@ -249,6 +264,11 @@ describe("Priming the cache", () => {
         maxBatchSize: 2,
         cache: true,
       };
+      let all = Js.Promise.all;
+      let resolve = Js.Promise.resolve;
+      let reject = Js.Promise.reject;
+      let then_ = Js.Promise.then_;
+      let make = Js.Promise.make;
     };
     module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
     IdentityLoader.prime("1", "1");
@@ -275,6 +295,11 @@ describe("Priming the cache", () => {
         maxBatchSize: 256,
         cache: true,
       };
+      let all = Js.Promise.all;
+      let resolve = Js.Promise.resolve;
+      let reject = Js.Promise.reject;
+      let then_ = Js.Promise.then_;
+      let make = Js.Promise.make;
     };
     module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
     IdentityLoader.prime("1", "A");
@@ -303,6 +328,11 @@ describe("Priming the cache by force", () => {
       maxBatchSize: 256,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
   module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
   testPromise("allows priming the cache", () => {

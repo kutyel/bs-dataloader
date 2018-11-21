@@ -20,7 +20,13 @@ describe("Can handle errors", () => {
       maxBatchSize: 256,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
+
   testPromise("if a error is returned it will return the error", () => {
     open Expect;
     open! Expect.Operators;
@@ -28,7 +34,7 @@ describe("Can handle errors", () => {
     let load1 = IdentityLoader.load("1");
     let load2 =
       IdentityLoader.load("2")
-      |> Js.Promise.catch((_) => Js.Promise.resolve("error"));
+      |> Js.Promise.catch(_ => Js.Promise.resolve("error"));
     Js.Promise.all([|load1, load2|])
     |> Js.Promise.then_(loadedValues =>
          Js.Promise.resolve(
@@ -60,13 +66,18 @@ describe("Does not cache errors", () => {
       maxBatchSize: 256,
       cache: true,
     };
+    let all = Js.Promise.all;
+    let resolve = Js.Promise.resolve;
+    let reject = Js.Promise.reject;
+    let then_ = Js.Promise.then_;
+    let make = Js.Promise.make;
   };
   module IdentityLoader = DataLoader.Make(IdentityLoaderImpl);
   testPromise("returns a error the first time", () => {
     open Expect;
     open! Expect.Operators;
     IdentityLoader.load("1")
-    |> Js.Promise.catch((_) => Js.Promise.resolve("error"))
+    |> Js.Promise.catch(_ => Js.Promise.resolve("error"))
     |> Js.Promise.then_(loadedValue =>
          Js.Promise.resolve(expect(loadedValue) |> toEqual("error"))
        );
@@ -75,7 +86,7 @@ describe("Does not cache errors", () => {
     open Expect;
     open! Expect.Operators;
     IdentityLoader.load("1")
-    |> Js.Promise.catch((_) => Js.Promise.resolve("error"))
+    |> Js.Promise.catch(_ => Js.Promise.resolve("error"))
     |> Js.Promise.then_(loadedValue =>
          Js.Promise.resolve(expect(loadedValue) |> toEqual("1"))
        );
