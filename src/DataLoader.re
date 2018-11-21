@@ -12,9 +12,9 @@ module type Impl = {
   let options: options;
   let all: array(t('a)) => unit;
   let resolve: 'a => t('a);
-  let reject: 'b => unit;
+  let reject: 'b => t(unit);
   let then_: ('b => unit, t('a)) => unit;
-  let make: (('a, t('a)) => unit, ('b, t('a)) => unit) => t('a);
+  let make: (('a, t('a)) => unit, ('b, t('a)) => t(unit)) => t('a);
 };
 
 let firstNInQueueToArray = (queue, numberOfValues) => {
