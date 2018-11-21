@@ -7,34 +7,20 @@ type options = {
 module type Impl = {
   type key;
   type value;
-  /*
-   * A Function, which when given an Array of keys, returns a Promise of an Array
-   * of values or Errors.
-   */
-  let batchLoadFun:
-    array(key) => Js.Promise.t(array(Belt.Result.t(value, exn)));
+  type t('a);
+  let batchLoadFun: array(key) => t(array(Belt.Result.t(value, exn)));
   let options: options;
-};
-
-let resolvedPromise = Js.Promise.resolve();
-
-let enqueuePostPromiseJob = fn => {
-  let _ =
-    resolvedPromise
-    |. Js.Promise.then_(
-         (_) => {
-           let _ = Js.Global.setTimeout(fn, 1);
-           Js.Promise.resolve();
-         },
-         _,
-       );
-  ();
+  let all: array(t('a)) => unit;
+  let resolve: 'a => t('a);
+  let reject: 'b => unit;
+  let then_: ('b => unit, t('a)) => unit;
+  let make: (('a, t('a)) => unit, ('b, t('a)) => unit) => t('a);
 };
 
 let firstNInQueueToArray = (queue, numberOfValues) => {
   let queueLength = Belt.MutableQueue.size(queue);
   let maxValues = queueLength > numberOfValues ? numberOfValues : queueLength;
-  Belt.Array.makeBy(maxValues, (_) => Belt.MutableQueue.popExn(queue));
+  Belt.Array.makeBy(maxValues, _ => Belt.MutableQueue.popExn(queue));
 };
 
 module Make = (Impl: Impl) => {
@@ -42,37 +28,49 @@ module Make = (Impl: Impl) => {
   let shouldBatch = Impl.options.batch;
   let maxBatchSize = Impl.options.maxBatchSize;
   let batchLoadFun = Impl.batchLoadFun;
-  let promiseCache: Hashtbl.t(Impl.key, Js.Promise.t(Impl.value)) =
+  let promiseCache: Hashtbl.t(Impl.key, Impl.t(Impl.value)) =
     Hashtbl.create(10);
   let queue = Belt.MutableQueue.make();
   let clear = key => Hashtbl.remove(promiseCache, key);
   let clearAll = () => Hashtbl.clear(promiseCache);
+  let enqueuePostPromiseJob = fn => {
+    let _ =
+      Impl.resolve() /* TODO: replace `setTimeout` with something native */
+      ->Impl.then_(
+          _ => {
+            let _ = Js.Global.setTimeout(fn, 1);
+            Impl.resolve()->ignore;
+          },
+          _,
+        );
+    ();
+  };
   let prime = (key, value) =>
     if (Hashtbl.mem(promiseCache, key)) {
       ();
     } else {
-      Hashtbl.add(promiseCache, key, Js.Promise.resolve(value));
+      Hashtbl.add(promiseCache, key, Impl.resolve(value));
     };
   let dispatchQueueBatch = queueSlice => {
     let keys = Belt.Array.map(queueSlice, ((key, _, _)) => key);
     batchLoadFun(keys)
-    |. Js.Promise.then_(
-         values => {
-           queueSlice
-           |. Belt.Array.forEachWithIndex((index, (key, resolve, reject)) =>
-                switch (values[index]) {
-                | Belt.Result.Ok(value) => resolve(. value)
-                | Belt.Result.Error(err) =>
-                  clear(key);
-                  reject(. err);
-                }
-              )
-           |. ignore;
-           Js.Promise.resolve();
-         },
-         _,
-       )
-    |. ignore;
+    ->Impl.then_(
+        values => {
+          queueSlice
+          ->Belt.Array.forEachWithIndex((index, (key, resolve, reject)) =>
+              switch (values[index]) {
+              | Belt.Result.Ok(value) => resolve(. value)
+              | Belt.Result.Error(err) =>
+                clear(key);
+                reject(. err);
+              }
+            )
+          ->ignore;
+          Impl.resolve()->ignore;
+        },
+        _,
+      )
+    ->ignore;
     ();
   };
   let rec dispatchQueue = () =>
@@ -88,7 +86,7 @@ module Make = (Impl: Impl) => {
       Hashtbl.find(promiseCache, key);
     } else {
       let promise =
-        Js.Promise.make((~resolve, ~reject) => {
+        Impl.make((resolve, reject) => {
           let _ = addToQueue((key, resolve, reject));
           if (Belt.MutableQueue.size(queue) == 1) {
             if (shouldBatch) {
@@ -108,5 +106,5 @@ module Make = (Impl: Impl) => {
         promise;
       };
     };
-  let loadMany = keys => Js.Promise.all(Belt.Array.map(keys, load));
+  let loadMany = keys => Impl.all(Belt.Array.map(keys, load));
 };
